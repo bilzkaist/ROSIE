@@ -21,6 +21,8 @@ from itertools import combinations
 from itertools import permutations
 import statistics as st
 from array import array
+from skimage.filters.rank import entropy as en
+from skimage.morphology import disk
 
 
 #Global Variables 
@@ -458,7 +460,8 @@ def runsboximage():
     image_array_outM = image_array_inM
     image_array_inR = np.array(imageOriginal)
     image_array_outR = image_array_inR
-    image_array_outRS = image_array_inR
+    image_array_inRS = np.array(imageOriginal)
+    image_array_outRS = image_array_inRS
     
     for i in range(len(image_array_inT)):
         for j in range(len(image_array_inT)):
@@ -466,8 +469,8 @@ def runsboximage():
                 image_array_outT[i][j][k] = sub_bytes_AES_Traditional(image_array_inT[i][j][k])
                 image_array_outB[i][j][k] = sub_bytes_Bahram_2021(image_array_inB[i][j][k])
                 image_array_outM[i][j][k]=  s_box_proposed_magic(image_array_inM[i][j][k])
-                image_array_outR[i][j][k]=  image_array_inR[i][j][k]^image_array_noise[i][j][k]#s_box_proposed_rosie(image_array_inR[i][j][k]^image_array_noise[i][j][k])
-                image_array_outRS[i][j][k]=  image_array_inR[image_array_inT - i][image_array_inT - j][k]#^image_array_noise[i][j][k]
+                image_array_outR[i][j][k]=  image_array_inR[i][j][k]^image_array_noise[i][j][k]
+                image_array_outRS[i][j][k]=  s_box_proposed_rosie(image_array_inRS[i][j][k])#^image_array_noise[i][j][k])#^image_array_noise[i][j][k]
     imageUpdateT=Image.fromarray(image_array_outT)
     imageUpdateT.save(imagePathTC)
     imageUpdateB=Image.fromarray(image_array_outB)
@@ -477,7 +480,7 @@ def runsboximage():
     imageUpdateR=Image.fromarray(image_array_outR)
     imageUpdateR.save(imagePathRC)
     imageUpdateRS=Image.fromarray(image_array_outRS)
-    imageUpdateRS.save(imagePathRC)
+    imageUpdateRS.save(imagePathRSC)
     
     #....................
     imageTC = Image.open(imagePathTC)
@@ -494,12 +497,18 @@ def runsboximage():
     image_arrayRC = np.array(imageRC)
     image_arrayRD = image_arrayRC
     
+    imageRSC = Image.open(imagePathRSC)
+    image_arrayRSC = np.array(imageRSC)
+    image_arrayRSD = image_arrayRSC
+    
     imageEntropy = cv2.imread(imagePath, cv2.IMREAD_GRAYSCALE)
     imageEntropyTC = cv2.imread(imagePathTC, cv2.IMREAD_GRAYSCALE)
     imageEntropyBC = cv2.imread(imagePathBC, cv2.IMREAD_GRAYSCALE)
     imageEntropyMC = cv2.imread(imagePathMC, cv2.IMREAD_GRAYSCALE)
     imageEntropyRC = cv2.imread(imagePathRC, cv2.IMREAD_GRAYSCALE)
     imageEntropyRSC = cv2.imread(imagePathRSC, cv2.IMREAD_GRAYSCALE)
+    imageEntropyNoise = cv2.imread(imagePathNoise, cv2.IMREAD_GRAYSCALE)
+    
     
     entropyImage = shannon_entropy(imageEntropy, 2)
     entropyImageTC = shannon_entropy(imageEntropyTC, 2)
@@ -507,11 +516,19 @@ def runsboximage():
     entropyImageMC = shannon_entropy(imageEntropyMC, 2)
     entropyImageRC = shannon_entropy(imageEntropyRC, 2)
     
+    entropyImageRSC = shannon_entropy(imageEntropyRSC, 2)
+    entropyImageNoise = shannon_entropy(imageEntropyNoise, 2)
+    
     print("Entropy Image -> h = ", entropyImage)
     print("Entropy ImageTC -> h = ", entropyImageTC)
     print("Entropy ImageBC -> h = ", entropyImageBC)
     print("Entropy ImageMC -> h = ", entropyImageMC)
     print("Entropy ImageRC -> h = ", entropyImageRC)
+    print("Entropy ImageRSC -> h = ", entropyImageRSC)
+    print("Entropy ImageNoise-> h = ", entropyImageNoise)
+    h = en(imageEntropyRC, disk(10))
+    print("Entropy -> h = ", h)
+    
     
     for i in range(len(image_array_inT)):
         for j in range(len(image_array_inT)):
@@ -519,8 +536,8 @@ def runsboximage():
                 image_arrayTD[i][j][k] = inv_sub_bytes_AES_Traditional(image_arrayTC[i][j][k])
                 image_arrayBD[i][j][k] = inv_sub_bytes_Bahram_2021(image_arrayBC[i][j][k])
                 image_arrayMD[i][j][k]=  inv_s_box_proposed_magic(image_arrayMC[i][j][k])
-                image_arrayRD[i][j][k]=  image_arrayRC[i][j][k]^image_array_noise[i][j][k] #(inv_s_box_proposed_rosie(image_arrayRC[i][j][k]))^image_array_noise[i][j][k]
-                image_array_outRS[i][j][k]=  image_array_inR[image_array_inT - i][image_array_inT - j][k]
+                image_arrayRD[i][j][k]=  image_arrayRC[i][j][k]^image_array_noise[i][j][k]#
+                image_arrayRSD[i][j][k]= (inv_s_box_proposed_rosie(image_arrayRSC[i][j][k]))#^image_array_noise[i][j][k]
     imageTD=Image.fromarray(image_arrayTD)
     imageTD.save(imagePathTD)
     imageBD=Image.fromarray(image_arrayBD)
@@ -529,6 +546,8 @@ def runsboximage():
     imageMD.save(imagePathMD)
     imageRD=Image.fromarray(image_arrayRD)
     imageRD.save(imagePathRD)
+    imageRSD=Image.fromarray(image_arrayRSD)
+    imageRSD.save(imagePathRSD)
     
     # Program Ended
 
