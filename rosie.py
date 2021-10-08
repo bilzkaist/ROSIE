@@ -617,6 +617,7 @@ def switch_mode(mode):
         
         
     }
+    
      # Get the function from switcher dictionary
     func = switcher.get(mode, lambda: "Invalid mode")
     # Execute the function
