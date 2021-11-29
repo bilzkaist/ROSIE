@@ -18,6 +18,11 @@ import matplotlib.image as mpimg
 from skimage.metrics import structural_similarity as ssim
 from skimage.measure import shannon_entropy
 from sklearn.metrics import mean_absolute_error
+
+from skimage import io, color, img_as_ubyte
+from skimage.feature import greycomatrix, greycoprops
+from sklearn.metrics.cluster import entropy
+
 import pyhomogeneity as hg
 import collections
 from scipy.stats import entropy
@@ -25,6 +30,8 @@ import copy
 from skimage.metrics import structural_similarity as ssim
 from bioinfokit import analys, visuz
 from scipy import signal
+import hashlib
+
 
 #Global Variables 
 BETA = [0]
@@ -33,6 +40,9 @@ BRAVO  = [2]
 CHARLIE = [3]
 
 ROSIEPATH = "/Users/bilaldastagir/Documents/vscode/ROSIE/"
+
+#BILZKEY  = a223939fa01bcadd3ce484dea574d28ee4fbaddfc0e13717d289e8d33929146e828fcf6e8f288025fafe0f21a3e5a2ae1e9c7daf88d52d65d3c6c35e99b777a0
+#KEY  =    [ 0xA2, 23939FA01BCADD3CE484DEA574D28EE4FBADDFC0E13717D289E8D33929146E828FCF6E8F288025FAFE0F21A3E5A2AE1E9C7DAF88D52D65D3C6C35E99B777A0
 
 # Proposed Dual Quad-Bit SBox  #
 # SBox MSCA
@@ -235,6 +245,7 @@ def SPN_Forward(testimagePath):
     imagePlain = Image.open(testimagePath)
     imagePlain.show()
     imArray_In = np.array(imagePlain)
+    print("Size of the Image : ",imArray_In.shape)
     slen = 512
     key = 128
     xlen = len(imArray_In)
@@ -252,17 +263,23 @@ def SPN_Forward(testimagePath):
     print("keylistBY: ",keylistBY)
     print("keylistBY Entropy -> h = ",shannon_entropy(keylistBY, 2))
     imagePathNoise = ROSIEPATH + "noise.png"
-    imageEntropyNoise = cv2.imread(imagePathNoise, cv2.IMREAD_GRAYSCALE)
+    imageEntropyNoise = cv2.imread(imagePathNoise, cv2.IMREAD_GRAYSCALE)   
     print(imageEntropyNoise)
     print("NOISE Entropy -> h = ",shannon_entropy(imageEntropyNoise, 2))
+    imageNoise = Image.open(imagePathNoise)
+    imageNoise.show()
+    imArray_Noise = np.array(imageNoise)
+    print("ImArray Noise ",imArray_Noise.shape)
+    print("NOISE : \n",imArray_Noise)
+    
     
     #imArray_Out_MSCA = copy.deepcopy(imArray_In)
     imArray_Out_AES_C = copy.deepcopy(imArray_In)
-    imArray_Out_RTL_C = copy.deepcopy(imArray_In)#np.zeros((256, 256, 3)) #copy.deepcopy(imArray_In)
+    imArray_Out_RTL_C = copy.deepcopy(imArray_Noise)#np.zeros((256, 256, 3)) #copy.deepcopy(imArray_In)
     imArray_Out_Bahrami_2021_C = copy.deepcopy(imArray_In)
     imArray_Out_ROSIE_C = copy.deepcopy(imArray_In)
     imArray_Out_AES_D = copy.deepcopy(imArray_In)
-    imArray_Out_RTL_D = copy.deepcopy(imArray_In)#np.zeros((256, 256, 3)) #copy.deepcopy(imArray_In)
+    imArray_Out_RTL_D = copy.deepcopy(imArray_Noise)#np.zeros((256, 256, 3)) #copy.deepcopy(imArray_In)
     imArray_Out_Bahrami_2021_D = copy.deepcopy(imArray_In)
     imArray_Out_ROSIE_D = copy.deepcopy(imArray_In)
     #imArray_Out_RTL_SP = imArray_In#copy.deepcopy(imArray_In)
@@ -278,20 +295,25 @@ def SPN_Forward(testimagePath):
             for k in range(len(imArray_In[0][0])):  # 3):
                 #imArray_Out_MSCA[i][j][k] = sBoxMSCA_Forward(imArray_In[i][j][k])
                 #if (i>ilow & i<ihigh & j>jlow & j<jhigh):
-                # imArray_Out_AES_C[keylistFX[i]][keylistFY[j]][k] = sub_bytes_AES_Traditional(imArray_In[i][j][k])
-                # imArray_Out_ROSIE_C[keylistFX[i]][keylistFY[j]][k] = sub_bytes_ROSIE(imArray_In[i][j][k])
-                # imArray_Out_Bahrami_2021_C[keylistFX[i]][keylistFY[j]][k] = sub_bytes_Bahram_2021(imArray_In[i][j][k])
-                # imArray_Out_RTL_C[keylistFX[i]][keylistFY[j]][k] = sBoxRTL_Forward(imArray_In[i][j][k])
-              
-                imArray_Out_AES_C[i][j][k] = sub_bytes_AES_Traditional(imArray_In[i][j][k])
-                imArray_Out_ROSIE_C[i][j][k] = sub_bytes_ROSIE(imArray_In[i][j][k])
-                imArray_Out_Bahrami_2021_C[i][j][k]= sub_bytes_Bahram_2021(imArray_In[i][j][k])
-                imArray_Out_RTL_C[i][j][k] = sBoxRTL_Forward(imArray_In[i][j][k])
+                imArray_Out_AES_C[keylistFX[i]][keylistFY[j]][k] = sub_bytes_AES_Traditional(imArray_In[i][j][k])
+                imArray_Out_ROSIE_C[keylistFX[i]][keylistFY[j]][k] = sub_bytes_ROSIE(imArray_In[i][j][k])
+                imArray_Out_Bahrami_2021_C[keylistFX[i]][keylistFY[j]][k] = sub_bytes_Bahram_2021(imArray_In[i][j][k])
+                #imArray_Out_RTL_C[keylistFX[i]][keylistFY[j]][len(imArray_In[0][0])-1-k] = sBoxRTL_Forward(imArray_In[i][j][k])
+                #imArray_Out_RTL_C[keylistFX[i]][keylistFY[j]][k] = sBoxRTL_Forward(imArray_In[i][j][k])
+                imArray_Out_RTL_C[keylistFX[i]][keylistFY[j]][k] = keylistFX[imArray_In[i][j][k]] #imArray_In[i][j][k]
+                imArray_Out_RTL_C[i][j][3] = (np.random.random((1,1))*256).astype('uint8')#imArray_Noise[i][j][k]
+                # imArray_Out_AES_C[i][j][k] = sub_bytes_AES_Traditional(imArray_In[i][j][k])
+                # imArray_Out_ROSIE_C[i][j][k] = sub_bytes_ROSIE(imArray_In[i][j][k])
+                # imArray_Out_Bahrami_2021_C[i][j][k]= sub_bytes_Bahram_2021(imArray_In[i][j][k])
+                # imArray_Out_RTL_C[i][j][k] = sBoxRTL_Forward(imArray_In[i][j][k])
               
                 #imArray_Out_RTL_S[i][j][k] = sBoxRTL_Forward(imArray_In[i][j][k])
                 #else:
                     #imArray_Out_RTL_S[i][j][k].append(imArray_Out_RTL_S[i][j][k]) 
                 #imArray_Out_RTL_SP[sBoxRTL_Forward(i)][sBoxRTL_Forward(j)][k] = sBoxRTL_Forward(imArray_In[i][j][k]) 
+    #print(shannon_entropy(img[:,:,0])) #7.5777861360050265
+    print("imArray_Out_RTL_C [",i,"] Entropy -> h = ",shannon_entropy(imArray_Out_RTL_C[:,:,0], 2))
+    print("................imArray_Out_RTL_C Size : ",imArray_Out_RTL_C.shape)
     stop_time = time.time()
     enc_time = stop_time-start_time
     print("Encryption Time : ",enc_time," seconds")
@@ -302,15 +324,16 @@ def SPN_Forward(testimagePath):
                 #imArray_Out_MSCA[i][j][k] = sBoxMSCA_Forward(imArray_In[i][j][k])
                 #if (i==0 & j==0):
                 #if (i>ilow & i<ihigh & j>jlow & j<jhigh):
-                # imArray_Out_AES_D[keylistBX[i]][keylistBY[j]][k] = inv_sub_bytes_AES_Traditional(imArray_Out_AES_C[i][j][k])
-                # imArray_Out_ROSIE_D[keylistBX[i]][keylistBY[j]][k] = inv_sub_bytes_ROSIE(imArray_Out_ROSIE_C[i][j][k])
-                # imArray_Out_Bahrami_2021_D[keylistBX[i]][keylistBY[j]][k] = inv_sub_bytes_Bahram_2021(imArray_Out_Bahrami_2021_C[i][j][k])
-                # imArray_Out_RTL_D[keylistBX[i]][keylistBY[j]][k] = sBoxRTL_Backward(imArray_Out_RTL_C[i][j][k])
+                imArray_Out_AES_D[keylistBX[i]][keylistBY[j]][k] = inv_sub_bytes_AES_Traditional(imArray_Out_AES_C[i][j][k])
+                imArray_Out_ROSIE_D[keylistBX[i]][keylistBY[j]][k] = inv_sub_bytes_ROSIE(imArray_Out_ROSIE_C[i][j][k])
+                imArray_Out_Bahrami_2021_D[keylistBX[i]][keylistBY[j]][k] = inv_sub_bytes_Bahram_2021(imArray_Out_Bahrami_2021_C[i][j][k])
+                #imArray_Out_RTL_D[keylistBX[i]][keylistBY[j]][len(imArray_In[0][0])-1-k] = sBoxRTL_Backward(imArray_Out_RTL_C[i][j][k])
+                imArray_Out_RTL_D[keylistBX[i]][keylistBY[j]][k] = sBoxRTL_Backward(imArray_Out_RTL_C[i][j][k])
                 
-                imArray_Out_AES_D[i][j][k]= inv_sub_bytes_AES_Traditional(imArray_Out_AES_C[i][j][k])
-                imArray_Out_ROSIE_D[i][j][k]= inv_sub_bytes_ROSIE(imArray_Out_ROSIE_C[i][j][k])
-                imArray_Out_Bahrami_2021_D[i][j][k]= inv_sub_bytes_Bahram_2021(imArray_Out_Bahrami_2021_C[i][j][k])
-                imArray_Out_RTL_D[i][j][k] = sBoxRTL_Backward(imArray_Out_RTL_C[i][j][k])
+                # imArray_Out_AES_D[i][j][k]= inv_sub_bytes_AES_Traditional(imArray_Out_AES_C[i][j][k])
+                # imArray_Out_ROSIE_D[i][j][k]= inv_sub_bytes_ROSIE(imArray_Out_ROSIE_C[i][j][k])
+                # imArray_Out_Bahrami_2021_D[i][j][k]= inv_sub_bytes_Bahram_2021(imArray_Out_Bahrami_2021_C[i][j][k])
+                # imArray_Out_RTL_D[i][j][k] = sBoxRTL_Backward(imArray_Out_RTL_C[i][j][k])
                
                 
                 #imArray_Out_RTL_D[i][j][k] = sBoxRTL_Backward(imArray_Out_RTL_S[i][j][k])
@@ -323,27 +346,6 @@ def SPN_Forward(testimagePath):
     # print("Dimension = ",imArray_In.shape)
     # testimage = Image.fromarray(imArray_In)
     # testimage.show()
-    # for i in range(len(imArray_In)):
-    #     for j in range(len(imArray_In[0])):
-    #         #imArray_Out_MSCA[i][j][k] = sBoxMSCA_Forward(imArray_In[i][j][k])
-    #         if (i>ilow & i<ihigh & j>jlow & j<jhigh):
-    #             imArray_Out_Bahrami_2021_S[i][j] = sub_bytes_Bahram_2021(imArray_In[i][j])
-    #         imArray_Out_RTL_S[keylistFX[i]][keylistFY[j]]= sBoxRTL_Forward(imArray_In[i][j])
-    #         #else:
-    #             #imArray_Out_RTL_S[i][j][k].append(imArray_Out_RTL_S[i][j][k]) 
-    #         #imArray_Out_RTL_SP[sBoxRTL_Forward(i)][sBoxRTL_Forward(j)][k] = sBoxRTL_Forward(imArray_In[i][j][k]) 
-
-    # for i in range(len(imArray_In)):
-    #     for j in range(len(imArray_In[0])):
-    #         #imArray_Out_MSCA[i][j][k] = sBoxMSCA_Forward(imArray_In[i][j][k])
-    #         #if (i==0 & j==0):
-    #         if (i>ilow & i<ihigh & j>jlow & j<jhigh):
-    #             imArray_Out_Bahrami_2021_D[i][j] = inv_sub_bytes_Bahram_2021(imArray_Out_Bahrami_2021_S[i][j])
-    #         imArray_Out_RTL_D[keylistBX[i]][keylistBY[j]] = sBoxRTL_Backward(imArray_Out_RTL_S[i][j])
-    #         #else:
-    #             #imArray_Out_RTL_S[i][j][k].append(imArray_Out_RTL_S[i][j][k]) 
-    #         #imArray_Out_RTL_SP[sBoxRTL_Forward(i)][sBoxRTL_Forward(j)][k] = sBoxRTL_Forward(imArray_In[i][j][k]) 
-
     
     
     #imageCipher_MSCA = Image.fromarray(imArray_Out_MSCA)
@@ -421,7 +423,7 @@ def SPN_Forward(testimagePath):
     # Entropy
     print("Original      Entropy -> h = ",shannon_entropy(imagePlain, 2))
     print("AES           Entropy -> h = ",shannon_entropy(imageEntropyCipherLenaAES_C, 2))
-    print("RTL           Entropy -> h = ",shannon_entropy(imageEntropyCipherTest, 2))
+    print("RTL(2)        Entropy -> h = ",shannon_entropy(imageEntropyCipherTest, 2))
     print("Bahrami 2021  Entropy -> h = ",shannon_entropy(imageEntropyCipherLenaBahrami_2021_C, 2))
     print("ROSIE         Entropy -> h = ",shannon_entropy(imageEntropyCipherLenaROSIE_C, 2))
     
@@ -523,12 +525,20 @@ def image_encryption():
     print("Image Encryption is Started........... !!!")
     # Write code Here
     #lenaimagePath = ROSIEPATH + "lenna.png"
-    testimagePath = ROSIEPATH + "lenna.png"
+    testimagePath = ROSIEPATH + "Lenna.png"
+    testentropyimagePath = ROSIEPATH + "imageCipherTest.png"
     #imOriginal = Image.open(lenaimagePath)
     #imOriginal = Image.open(testimagePath)
     #imOriginal = cv2.imread(lenaimagePath, cv2.IMREAD_GRAYSCALE)
     #imOriginal.show()
+ 
     SPN_Forward(testimagePath)
+    
+    rgbImg = io.imread(testentropyimagePath)
+    grayImg = img_as_ubyte(color.rgb2gray(rgbImg))
+    
+   # print("Test         Entropy -> h = ",entropy(grayImg, 2))
+    print("Test (2)     Entropy -> h = ",shannon_entropy(grayImg, 2))
     print("Image Encryption is Ended Successfully !!!")
     return 0
 
