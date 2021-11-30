@@ -70,7 +70,7 @@ def encryptROSIE(parrayIn):
 testentropyimagePath = ROSIEPATH + "imageCipherTest.png"
 testentropyimagePathLenna = ROSIEPATH + "Lenna.png"
 testentropyimagePathPlain = ROSIEPATH + "imagePlainTestAES.png"
-testentropyimagePathCipher = ROSIEPATH + "imageCipherTestAES.png"
+
 resizedtestentropyimagePath = ROSIEPATH + "resizedimageCipherTest.png"
 
 img=cv2.imread(testentropyimagePathLenna,1)#read image
@@ -120,7 +120,8 @@ for i in range(x):
 print("Entropy Encrypt = ",entropy(enc_blue))
 print("Encrypt Image : ",enc_blue)
 enc_blue2 = encryptROSIE(blue)    
-cv2.imwrite(testentropyimagePathCipher , enc_blue)
+imagePathCipher = ROSIEPATH + "imageCipherAES.png"
+cv2.imwrite(imagePathCipher  , enc_blue)
 
 
 image = Image.open(testentropyimagePath)
@@ -132,10 +133,10 @@ resized_img.save(resizedtestentropyimagePath)
 
 
 
-rgbImg = io.imread(testentropyimagePathCipher)
+rgbImg = io.imread(imagePathCipher )
 
 #grayImg = img_as_ubyte(color.rgb2gray(rgbImg))
-grayImg = io.imread(testentropyimagePathCipher)
+grayImg = io.imread(imagePathCipher)
 # print("Test         Entropy -> h = ",entropy(grayImg, 2))
 #print("Test (2)     Entropy -> h = ",shannon_entropy(grayImg, 2))
 
@@ -144,13 +145,15 @@ a = (np.ones((100,100))*255).astype('uint8')
 b = (np.random.random((100,100))*256).astype('uint8')
 
 plt.figure()
-plt.subplot(1,4,1)
-imshow(a)
-plt.title(entropy(a))
-plt.subplot(2,4,2)
-imshow(b)
-plt.title(entropy(b))
-plt.subplot(3,4,3)
+# plt.subplot(1,4,1)
+# imshow(a)
+# plt.title(entropy(a))
+# plt.subplot(2,4,2)
+# imshow(b)
+#plt.title(,entropy(b))
+plt.subplot(1,1,1)
 imshow(grayImg)
-plt.title(entropy(grayImg))
+plt.xlabel("AES (Traditional) SBox ")
+entropySBox =  entropy(grayImg)
+plt.title(entropySBox)
 plt.show()
